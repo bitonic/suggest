@@ -8,8 +8,10 @@ module TST
        , prefix
        ) where
 
+import Control.Arrow (first)
+
 data TST = Branch {-# UNPACK #-} !Char !TST !TST !TST
-         | Null !TST
+         | Null Int !TST
          | End
 
 instance Show TST where
@@ -21,35 +23,35 @@ instance Eq TST where
 empty :: TST
 empty = End
 
-singleton :: String -> TST
-singleton [] = Null End
-singleton (c : s) = Branch c End (singleton s) End
+singleton :: String -> Int -> TST
+singleton [] v      = Null v End
+singleton (c : s) v = Branch c End (singleton s v) End
 
-toList :: TST -> [String]
+toList :: TST -> [(String, Int)]
 toList = prefix ""
 
-fromList :: [String] -> TST
-fromList = foldr insert empty
+fromList :: [(String, Int)] -> TST
+fromList = foldr (uncurry insert) empty
 
-insert :: String -> TST -> TST
-insert []       End               = Null End
-insert []       t@(Null _)        = t
-insert []       (Branch c l m r)  = Branch c (insert [] l) m r
-insert s        End               = singleton s
-insert s        (Null t)          = Null (insert s t)
-insert (c1 : s) (Branch c2 l m r) =
+insert :: String -> Int -> TST -> TST
+insert []       v  End               = Null v End
+insert []       v  (Null _ t)        = Null v t
+insert []       v  (Branch c l m r)  = Branch c (insert [] v l) m r
+insert s        v  End               = singleton s v
+insert s        v1 (Null v2 t)       = Null v2 (insert s v1 t)
+insert (c1 : s) v  (Branch c2 l m r) =
   case compare c1 c2 of
-    LT -> Branch c2 (insert (c1 : s) l) m r
-    EQ -> Branch c2 l (insert s m) r
-    GT -> Branch c2 l m (insert (c1 : s) r)
+    LT -> Branch c2 (insert (c1 : s) v l) m r
+    EQ -> Branch c2 l (insert s v m) r
+    GT -> Branch c2 l m (insert (c1 : s) v r)
 
-prefix :: String -> TST -> [String]
+prefix :: String -> TST -> [(String, Int)]
 prefix _        End               = []
-prefix s        (Null t)          = [] : prefix s t
+prefix s        (Null v t)        = ([], v) : prefix s t
 prefix []       (Branch c l m r)  =
-  map (c :) (prefix [] l ++ prefix [] m ++ prefix [] r)
+  map (first (c :)) (prefix [] l ++ prefix [] m ++ prefix [] r)
 prefix (c1 : s) (Branch c2 l m r) =
   case compare c1 c2 of
     LT -> prefix (c1 : s) l
-    EQ -> map (c1 :) (prefix s m)
+    EQ -> map (first (c1 :)) (prefix s m)
     GT -> prefix (c1 : s) r
