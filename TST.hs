@@ -49,7 +49,7 @@ prefix :: String -> TST -> [(String, Int)]
 prefix _        End               = []
 prefix s        (Null v t)        = ([], v) : prefix s t
 prefix []       (Branch c l m r)  =
-  map (first (c :)) (prefix [] l ++ prefix [] m ++ prefix [] r)
+  prefix [] l ++ map (first (c :)) (prefix [] m) ++ prefix [] r
 prefix (c1 : s) (Branch c2 l m r) =
   case compare c1 c2 of
     LT -> prefix (c1 : s) l
