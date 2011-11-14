@@ -8,10 +8,6 @@ module TST
        , prefix
        ) where
 
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import Data.Word (Word8)
-
 data TST = Branch {-# UNPACK #-} !Char !TST !TST !TST
          | Null !TST
          | End
