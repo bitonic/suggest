@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, BangPatterns #-}
 module Main where
 
 import Blaze.ByteString.Builder.Char.Utf8
@@ -12,6 +12,12 @@ import Network.Wai.Handler.Warp
 
 import TST
 
+dictFile :: FilePath
+dictFile = "resources/words"
+
+searchPage :: FilePath
+searchPage = "resources/search.html"
+
 toJSON :: [String] -> String
 toJSON ws = "{words:" ++ intercalate "," (map show ws) ++ "}"
 
@@ -20,7 +26,7 @@ suggest dict w = ResponseBuilder status200 [("Content-Type", "text/plain")]
                  (fromString . toJSON . take 5 . prefix w $ dict)
 
 search :: Response
-search = ResponseFile status200 [("Content-Type", "text/html")] "search.html" Nothing
+search = ResponseFile status200 [("Content-Type", "text/html")] searchPage Nothing
 
 e404 :: Response
 e404 = ResponseBuilder status404 [("Content-Type", "text/html")] (fromString "404")
@@ -35,7 +41,6 @@ app dict req = return $ case rawPathInfo req of
 
 main :: IO ()
 main = do
-  ws <- fmap (lines . map toLower) $ readFile "words"
-  let dict = fromList ws
-  dict `seq` (putStrLn "Server ready" >> run 3000 (app dict))
-  
+  !dict <- fmap (fromList . lines . map toLower) $ readFile "resources/words"
+  putStrLn "Server ready"
+  run 3000 (app dict)
