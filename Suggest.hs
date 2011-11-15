@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, BangPatterns, TupleSections #-}
+{-# LANGUAGE OverloadedStrings, BangPatterns, TupleSections, PatternGuards #-}
 module Main where
 
 import Blaze.ByteString.Builder.Char.Utf8 (fromString)
