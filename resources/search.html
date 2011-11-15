@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>Foogle</title>
+    <script src="http://yui.yahooapis.com/3.4.1/build/yui/yui-min.js"></script>
+    <link href='http://fonts.googleapis.com/css?family=Droid+Serif' rel='stylesheet' type='text/css'>
+    <style type="text/css">
+    body {
+        font-family: "Droid Serif", sans-serif;
+        text-align: center;
+    }
+
+    h1 {
+        font-size: 5em;
+        text-shadow: 1px 1px 0 #000;
+    }
+
+    .blue {
+        color: blue;
+    }
+
+    .red {
+        color: red;
+    }
+
+    .yellow {
+        color: yellow;
+    }
+
+    .green {
+        color: green;
+    }
+
+    #search {
+        font-size: 1.5em;
+    }
+    </style>
+
+    <script type="text/javascript">
+    YUI().use('autocomplete', 'autocomplete-highlighters', function (Y) {
+        Y.one('body').addClass('yui3-skin-sam');
+        Y.one('#search').plug(Y.Plugin.AutoComplete, {
+            resultHighlighter: 'phraseMatch',
+            source: '/suggest.json?q={query}',
+            queryDelimiter: ' ',
+        });
+    });
+    </script>
+  </head>
+
+  <body>
+    <h1><span class="blue">F</span><span class="red">o</span><span class="yellow">o</span><span class="blue">g</span><span class="green">l</span><span class="red">e</span></h1>
+    <form>
+      <input type="text" id="search" />
+    </form>
+  </body>
+</html>

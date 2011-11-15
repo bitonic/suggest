@@ -29,9 +29,12 @@ wordsLimit :: Int
 wordsLimit = 10
 
 toJSON :: [String] -> String
-toJSON ws = "{words:" ++ intercalate "," (map show ws) ++ "}"
+toJSON ws = "[" ++ intercalate "," (map show ws) ++ "]"
 
-lookupCache :: TST Int -> IORef (TST [String]) -> String -> IO [String]
+type Cache = TST [String]
+type Dictionary = TST Int
+
+lookupCache :: Dictionary -> IORef Cache -> String -> IO [String]
 lookupCache dict cache w = do
   wsm <- fmap (lookup w) (readIORef cache)
   case wsm of
@@ -41,10 +44,10 @@ lookupCache dict cache w = do
       atomicModifyIORef cache ((, ()) . insert w ws)
       return ws
 
-suggest :: TST Int -> IORef (TST [String]) -> String -> Iteratee ByteString IO Response
+suggest :: Dictionary -> IORef Cache -> String -> Iteratee ByteString IO Response
 suggest dict cache w = do
   ws <- lift $ lookupCache dict cache w
-  return $ ResponseBuilder status200 [("Content-Type", "text/plain")]
+  return $ ResponseBuilder status200 [("Content-Type", "application/json")]
            (fromString . toJSON  $ ws)
 
 search :: Response
@@ -53,11 +56,11 @@ search = ResponseFile status200 [("Content-Type", "text/html")] searchPage Nothi
 e404 :: Response
 e404 = ResponseBuilder status404 [("Content-Type", "text/html")] (fromString "404")
 
-app :: TST Int -> IORef (TST [String]) -> Application
+app :: Dictionary -> IORef Cache -> Application
 app dict cache req = case rawPathInfo req of
-  "/suggest" -> case queryString req of
-                  [("q", (Just w))] -> suggest dict cache (toString w)
-                  _                 -> return e404
+  "/suggest.json" -> case queryString req of
+                       [("q", (Just w))] -> suggest dict cache (toString w)
+                       _                 -> return e404
   "/"        -> return search
   _          -> return e404
 
