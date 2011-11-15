@@ -6,9 +6,8 @@ module TST
        , fromList
        , insert
        , prefix
-       , prefixWild
+       , matchWL
        , lookup
-       , matchWild
        ) where
 
 import Control.Arrow (first)
@@ -64,16 +63,15 @@ prefix (c1 : s) (Branch c2 l m r) =
     EQ -> map (first (c1 :)) (prefix s m)
     GT -> prefix (c1 : s) r
 
-prefixWild :: Ord c => WildList c -> TST c a -> [([c], a)]
-prefixWild _        End               = []
-prefixWild []       (Null v t)        = ([], v) : prefixWild [] t
-prefixWild []       (Branch c l m r)  =
-  prefixWild [] l ++ map (first (c :)) (prefixWild [] m) ++ prefixWild [] r
-prefixWild s       (Null _ t)        = prefixWild s t
-prefixWild (w : s) (Branch c2 l m r) =
-  let left   = prefixWild (w : s) l
-      middle = map (first (c2 :)) (prefixWild s m)
-      right  = prefixWild (w : s) r
+matchWL :: Ord c => WildList c -> TST c a -> [([c], a)]
+matchWL _       End               = []
+matchWL []      (Null v _)        = [([], v)]
+matchWL []      (Branch _ l _ _)  = matchWL [] l
+matchWL s       (Null _ t)        = matchWL s t
+matchWL (w : s) (Branch c2 l m r) =
+  let left   = matchWL (w : s) l
+      middle = map (first (c2 :)) (matchWL s m)
+      right  = matchWL (w : s) r
   in case w of
     Wildcard -> left ++ middle ++ right
     El c1 -> case compare c1 c2 of
@@ -86,6 +84,3 @@ lookup s t =
   case prefix s t of
     ((s', v):_) -> if s == s' then Just v else Nothing
     _           -> Nothing
-
-matchWild :: Ord c => WildList c -> TST c a -> [([c], a)]
-matchWild w t = filter ((== length w) . length . fst) . prefixWild w $ t

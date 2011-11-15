@@ -7,7 +7,7 @@
     <link href='http://fonts.googleapis.com/css?family=Droid+Serif' rel='stylesheet' type='text/css'>
     <style type="text/css">
     body {
-        font-family: "Droid Serif", sans-serif;
+        font-family: "Droid Serif", serif;
         text-align: center;
     }
 
@@ -32,27 +32,107 @@
         color: green;
     }
 
-    #search {
+    #searchInput {
         font-size: 1.5em;
     }
+
+    #corrector {
+        display: none;
+        font-size: 1.3em;
+    }
+
+    .wrong {
+        font-weight: bold;
+    }
+
     </style>
 
     <script type="text/javascript">
-    YUI().use('autocomplete', 'autocomplete-highlighters', function (Y) {
+    var splitWords = function(s) {
+        var ws = s.split(" ");
+        var trim = [];
+        var i;
+        for (i = 0; i < ws.length; ++i) {
+            if (ws[i] !== "") {
+                trim.push(ws[i]);
+            }
+        }
+        return trim;
+    };
+
+    var difference = function(ws, correct) {
+        var different = false;
+        var words = [];
+        var i;
+        for (i = 0; i < ws.length; ++i) {
+            if (ws[i] === correct[i]) {
+                words.push({different: false, word: ws[i]});
+            } else {
+                different = true;
+                words.push({different: true, word: correct[i]});
+            }
+        }
+        return {different: different, words: words};
+    }
+
+    YUI().use('node', 'io-base', 'json-parse', 'autocomplete', 'autocomplete-highlighters', function (Y) {
         Y.one('body').addClass('yui3-skin-sam');
-        Y.one('#search').plug(Y.Plugin.AutoComplete, {
+
+        // Auto completion
+        Y.one('#searchInput').plug(Y.Plugin.AutoComplete, {
             resultHighlighter: 'phraseMatch',
             source: '/suggest.json?q={query}',
             queryDelimiter: ' ',
         });
+
+        var spellCheck = function(id, o, words) {
+            var correct = splitWords(o.responseText);
+            var diff = difference(words, correct);
+            var div = Y.one('#corrector');
+            var span = Y.one('#correction');
+            var i;
+            span.empty();
+            if (diff.different) {
+                div.setStyle('display', 'block');
+                for (i = 0; i < diff.words.length; ++i) {
+                    if (diff.words[i].different) {
+                        span.append(Y.Node.create('<span class="wrong">' + diff.words[i].word + '</span>'));
+                    } else {
+                        span.append(diff.words[i].word);
+                    }
+                    if (i < diff.words.length - i) {
+                        span.append('&nbsp;');
+                    }
+                }
+            } else {
+                div.setStyle('display', 'none');
+            }
+        };
+
+        var requestSpellCheck = function() {
+            var input = Y.one('#searchInput').get('value');
+            var uri = '/correct.json';
+            var data = {q: input};
+            Y.io(uri, { on: {complete: spellCheck}
+                      , data: data
+                      , arguments: splitWords(input)
+                      });
+        };
+
+        Y.one('#search').on('submit', requestSpellCheck);
     });
+
     </script>
   </head>
 
   <body>
     <h1><span class="blue">F</span><span class="red">o</span><span class="yellow">o</span><span class="blue">g</span><span class="green">l</span><span class="red">e</span></h1>
-    <form>
-      <input type="text" id="search" />
+    <div id="corrector">
+      Maybe you meant &#8220;<span id="correction"></span>&#8221;
+    </div>
+    <form id="search" action="#">
+      <input type="text" id="searchInput" />
+      <input type="submit" value="Go!" id="searchButton" />
     </form>
   </body>
 </html>

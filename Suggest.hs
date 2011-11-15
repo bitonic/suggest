@@ -28,9 +28,12 @@ searchPage = "resources/search.html"
 wordsLimit :: Int
 wordsLimit = 10
 
+jsonList :: [String] -> String
+jsonList ws = "[" ++ intercalate "," (map show ws) ++ "]"
+
 type Dictionary = TST Char Int
 type SuggestCache = TST Char [String]
-type CorrectorCache = TST Char (Maybe String)
+type CorrectorCache = TST Char String
 
 lookupSuggestCache :: Dictionary -> IORef SuggestCache -> String -> IO [String]
 lookupSuggestCache dict cache w = do
@@ -46,33 +49,31 @@ suggest :: Dictionary -> IORef SuggestCache -> String -> Iteratee ByteString IO 
 suggest dict cache w = do
   ws <- lift $ lookupSuggestCache dict cache w
   return $ ResponseBuilder status200 [("Content-Type", "application/json")]
-           (fromString . toJSON $ ws)
-  where
-    toJSON ws = "[" ++ intercalate "," (map show ws) ++ "]"
+           (fromString . jsonList $ ws)
 
-lookupCorrectorCache :: Dictionary -> IORef CorrectorCache -> String -> IO (Maybe String)
+lookupCorrectorCache :: Dictionary -> IORef CorrectorCache -> String -> IO String
 lookupCorrectorCache dict cache w = do
   wsm <- fmap (lookup w) (readIORef cache)
   case wsm of
     Just wm -> return wm
     Nothing -> do
-      let wm | Just _ <- lookup w dict = Nothing
-             | (w' : _) <- edits1      = Just w'
-             | (w' : _) <- edits2      = Just w'
-             | otherwise               = Nothing
+      let wm | Just _ <- lookup w dict = w
+             | (w' : _) <- edits1      = w'
+             | (w' : _) <- edits2      = w'
+             | otherwise               = w
       atomicModifyIORef cache ((, ()) . insert w wm)
-      return (wm :: Maybe String)
+      return wm
   where
-    process = concatMap (map fst . flip matchWild dict)
-    edits1  = process . edits . wild $ w
-    edits2  = process . concatMap edits . edits . wild $ w
+    process = concatMap (map fst . flip matchWL dict)
+    edits1  = process . edits . wildList $ w
+    edits2  = process . concatMap edits . edits . wildList $ w
 
       
-correct :: Dictionary -> IORef CorrectorCache -> String -> Iteratee ByteString IO Response
-correct dict cache w = do
-  wm <- lift $ lookupCorrectorCache dict cache w
-  return $ ResponseBuilder status200 [("Content-Type", "text/plain")]
-           (fromString . show $ wm)
+correct :: Dictionary -> IORef CorrectorCache -> [String] -> Iteratee ByteString IO Response
+correct dict cache ws = do
+  wm <- lift . mapM (lookupCorrectorCache dict cache) $ ws
+  return $ ResponseBuilder status200 [("Content-Type", "application/json")]
+           (fromString . unwords $ wm)
 
 search :: Response
 search = ResponseFile status200 [("Content-Type", "text/html")] searchPage Nothing
@@ -86,7 +87,7 @@ app dict scache ccache req = case rawPathInfo req of
                        [("q", (Just w))] -> suggest dict scache (toString w)
                        _                 -> return e404
   "/correct.json" -> case queryString req of
-                       [("q", (Just w))] -> correct dict ccache (toString w)
+                       [("q", (Just w))] -> correct dict ccache (words $ toString w)
                        _                 -> return e404
   "/"             -> return search
   _               -> return e404
@@ -96,5 +97,5 @@ main = do
   !dict <- fmap (fromList . flip zip [1..] . lines . map toLower) $ readFile dictFile
   scache <- newIORef empty
   ccache <- newIORef empty
-  run 3000 (app dict scache ccache)
   putStrLn "Server ready on port 3000"
+  run 3000 (app dict scache ccache)

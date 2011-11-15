@@ -11,8 +11,11 @@ instance Show a => Show (Wildcard a) where
   show Wildcard = "*"
   show (El c)   = show c
 
-wild :: [a] -> WildList a
-wild = map El
+wildList :: [a] -> WildList a
+wildList = map El
+
+wildString :: String -> WildList Char
+wildString = map (\c -> if c == '*' then Wildcard else El c)
 
 matches :: Eq a => WildList a -> [a] -> Bool
 matches []             []       = True
