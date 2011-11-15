@@ -7,10 +7,8 @@ import Data.ByteString (ByteString)
 import Data.ByteString.UTF8 (toString)
 import Data.Char (toLower)
 import Data.Enumerator (Iteratee)
-import Data.Enumerator (run_, enumList, ($$))
 import Data.IORef
 import Data.List (intercalate, sortBy)
-import Data.Maybe (isJust, listToMaybe)
 import Data.Ord (comparing)
 import Network.HTTP.Types (status200, status404)
 import Network.Wai
@@ -59,8 +57,8 @@ lookupCorrectorCache dict cache w = do
     Just wm -> return wm
     Nothing -> do
       let wm | Just _ <- lookup w dict = Nothing
-             | (w' : _) <- edits1      = Just w
-             | (w' : _) <- edits2      = Just w
+             | (w' : _) <- edits1      = Just w'
+             | (w' : _) <- edits2      = Just w'
              | otherwise               = Nothing
       atomicModifyIORef cache ((, ()) . insert w wm)
       return (wm :: Maybe String)

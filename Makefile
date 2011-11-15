@@ -1,6 +1,6 @@
 
 all:
-	ghc -O2 Suggest.hs
+	ghc -O2 -Wall Suggest.hs
 
 clean:
 	rm -rf Suggest *.o *.hi
