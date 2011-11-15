@@ -48,6 +48,7 @@
     </style>
 
     <script type="text/javascript">
+    // splitWords :: String -> [String]
     var splitWords = function(s) {
         var ws = s.split(" ");
         var trim = [];
@@ -60,6 +61,10 @@
         return trim;
     };
 
+    // difference :: [String] -> [String]
+    //               -> { different :: Bool
+    //                  , words :: [{different :: Bool, word :: String}]
+    //                  }
     var difference = function(ws, correct) {
         var different = false;
         var words = [];
@@ -85,7 +90,9 @@
             queryDelimiter: ' ',
         });
 
+        // spellCheck :: Number -> Object -> [String] -> ()
         var spellCheck = function(id, o, words) {
+            console.log(typeof id);
             var correct = splitWords(o.responseText);
             var diff = difference(words, correct);
             var div = Y.one('#corrector');
@@ -109,6 +116,7 @@
             }
         };
 
+        // requestSpellCheck :: () -> ()
         var requestSpellCheck = function() {
             var input = Y.one('#searchInput').get('value');
             var uri = '/correct.json';
