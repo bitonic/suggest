@@ -13,8 +13,8 @@ import Control.Arrow (first)
 
 import Prelude hiding (lookup)
 
-data TST a = Branch {-# UNPACK #-} !Char !(TST a) !(TST a) !(TST a)
-           | Null a !(TST a)
+data TST a = Branch Char (TST a) (TST a) (TST a)
+           | Null a (TST a)
            | End
 
 instance Show a => Show (TST a) where
