@@ -39,6 +39,7 @@
     #corrector {
         display: none;
         font-size: 1.3em;
+        margin-bottom: 1.5em;
     }
 
     .wrong {
@@ -78,7 +79,7 @@
             }
         }
         return {different: different, words: words};
-    }
+    };
 
     YUI().use('node', 'io-base', 'json-parse', 'autocomplete', 'autocomplete-highlighters', function (Y) {
         Y.one('body').addClass('yui3-skin-sam');
@@ -87,12 +88,11 @@
         Y.one('#searchInput').plug(Y.Plugin.AutoComplete, {
             resultHighlighter: 'phraseMatch',
             source: '/suggest.json?q={query}',
-            queryDelimiter: ' ',
+            queryDelimiter: ' '
         });
 
         // spellCheck :: Number -> Object -> [String] -> ()
         var spellCheck = function(id, o, words) {
-            console.log(typeof id);
             var correct = splitWords(o.responseText);
             var diff = difference(words, correct);
             var div = Y.one('#corrector');
@@ -102,12 +102,14 @@
             if (diff.different) {
                 div.setStyle('display', 'block');
                 for (i = 0; i < diff.words.length; ++i) {
+                    var word = diff.words[i].word;
+
                     if (diff.words[i].different) {
-                        span.append(Y.Node.create('<span class="wrong">' + diff.words[i].word + '</span>'));
+                        span.append(Y.Node.create('<span class="wrong">' + word + '</span>'));
                     } else {
-                        span.append(diff.words[i].word);
+                        span.append(word);
                     }
-                    if (i < diff.words.length - i) {
+                    if (i < diff.words.length - 1) { 
                         span.append('&nbsp;');
                     }
                 }
@@ -121,10 +123,11 @@
             var input = Y.one('#searchInput').get('value');
             var uri = '/correct.json';
             var data = {q: input};
-            Y.io(uri, { on: {complete: spellCheck}
-                      , data: data
-                      , arguments: splitWords(input)
-                      });
+            Y.io(uri, {
+                on: {complete: spellCheck},
+                data: data,
+                arguments: splitWords(input)
+            });
         };
 
         Y.one('#search').on('submit', requestSpellCheck);

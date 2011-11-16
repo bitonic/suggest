@@ -17,21 +17,22 @@ import Wildcard
 import Prelude hiding (lookup)
 
 data TST c a = Branch c (TST c a) (TST c a) (TST c a)
-             | Null a (TST c a)
-             | End
+             | End a (TST c a)
+             | Null
+             deriving (Show)
 
-instance (Ord c, Show c, Show a) => Show (TST c a) where
-  show = ("fromList " ++) . show . toList
+-- instance (Ord c, Show c, Show a) => Show (TST c a) where
+--   show = ("fromList " ++) . show . toList
 
 instance (Ord c, Eq c, Eq a) => Eq (TST c a) where
   t1 == t2 = toList t1 == toList t2
 
 empty :: TST l a
-empty = End
+empty = Null
 
 singleton :: [c] -> a -> TST c a
-singleton [] v      = Null v End
-singleton (c : s) v = Branch c End (singleton s v) End
+singleton [] v      = End v Null
+singleton (c : s) v = Branch c Null (singleton s v) Null
 
 toList :: Ord c => TST c a -> [([c], a)]
 toList = prefix []
@@ -40,11 +41,11 @@ fromList :: Ord c => [([c], a)] -> TST c a
 fromList = foldr (uncurry insert) empty
 
 insert :: Ord c => [c] -> a -> TST c a -> TST c a
-insert []       v  End               = Null v End
-insert []       v  (Null _ t)        = Null v t
+insert []       v  Null              = End v Null
+insert []       v  (End _ t)         = End v t
 insert []       v  (Branch c l m r)  = Branch c (insert [] v l) m r
-insert s        v  End               = singleton s v
-insert s        v1 (Null v2 t)       = Null v2 (insert s v1 t)
+insert s        v  Null              = singleton s v
+insert s        v1 (End v2 t)        = End v2 (insert s v1 t)
 insert (c1 : s) v  (Branch c2 l m r) =
   case compare c1 c2 of
     LT -> Branch c2 (insert (c1 : s) v l) m r
@@ -52,11 +53,11 @@ insert (c1 : s) v  (Branch c2 l m r) =
     GT -> Branch c2 l m (insert (c1 : s) v r)
 
 prefix :: Ord c => [c] -> TST c a -> [([c], a)]
-prefix _        End               = []
-prefix []       (Null v t)        = ([], v) : prefix [] t
+prefix _        Null              = []
+prefix []       (End v t)         = ([], v) : prefix [] t
 prefix []       (Branch c l m r)  =
   prefix [] l ++ map (first (c :)) (prefix [] m) ++ prefix [] r
-prefix s        (Null _ t)        = prefix s t
+prefix s        (End _ t)         = prefix s t
 prefix (c1 : s) (Branch c2 l m r) =
   case compare c1 c2 of
     LT -> prefix (c1 : s) l
@@ -64,10 +65,10 @@ prefix (c1 : s) (Branch c2 l m r) =
     GT -> prefix (c1 : s) r
 
 matchWL :: Ord c => WildList c -> TST c a -> [([c], a)]
-matchWL _       End               = []
-matchWL []      (Null v _)        = [([], v)]
+matchWL _       Null              = []
+matchWL []      (End v _)         = [([], v)]
 matchWL []      (Branch _ l _ _)  = matchWL [] l
-matchWL s       (Null _ t)        = matchWL s t
+matchWL s       (End _ t)         = matchWL s t
 matchWL (w : s) (Branch c2 l m r) =
   let left   = matchWL (w : s) l
       middle = map (first (c2 :)) (matchWL s m)

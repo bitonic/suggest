@@ -64,7 +64,7 @@ lookupCorrectorCache dict cache w = do
       atomicModifyIORef cache ((, ()) . insert w wm)
       return wm
   where
-    process = concatMap (map fst . flip matchWL dict)
+    process = map fst . sortBy (comparing snd) . concatMap (flip matchWL dict)
     edits1  = process . edits . wildList $ w
     edits2  = process . concatMap edits . edits . wildList $ w
 
