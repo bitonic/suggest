@@ -19,10 +19,9 @@ import Prelude hiding (lookup)
 data TST c a = Branch c (TST c a) (TST c a) (TST c a)
              | End a (TST c a)
              | Null
-             deriving (Show)
 
--- instance (Ord c, Show c, Show a) => Show (TST c a) where
---   show = ("fromList " ++) . show . toList
+instance (Ord c, Show c, Show a) => Show (TST c a) where
+  show = ("fromList " ++) . show . toList
 
 instance (Ord c, Eq c, Eq a) => Eq (TST c a) where
   t1 == t2 = toList t1 == toList t2
