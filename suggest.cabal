@@ -20,7 +20,7 @@ executable suggest
   build-depends:     base >= 4 && < 5
                    , warp
                    , wai
-                   , enumerator
+                   , conduit
                    , blaze-builder
                    , http-types
                    , utf8-string

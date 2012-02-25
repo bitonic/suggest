@@ -3,10 +3,9 @@ module Main where
 
 import Blaze.ByteString.Builder.Char.Utf8 (fromString)
 import Control.Monad.Trans (lift)
-import Data.ByteString (ByteString)
 import Data.ByteString.UTF8 (toString)
 import Data.Char (toLower)
-import Data.Enumerator (Iteratee)
+import Data.Conduit (ResourceT)
 import Data.IORef
 import Data.List (intercalate, sortBy)
 import Data.Ord (comparing)
@@ -45,7 +44,7 @@ lookupSuggestCache dict cache w = do
       atomicModifyIORef cache ((, ()) . insert w ws)
       return ws
 
-suggest :: Dictionary -> IORef SuggestCache -> String -> Iteratee ByteString IO Response
+suggest :: Dictionary -> IORef SuggestCache -> String -> ResourceT IO Response
 suggest dict cache w = do
   ws <- lift $ lookupSuggestCache dict cache w
   return $ ResponseBuilder status200 [("Content-Type", "application/json")]
@@ -68,8 +67,7 @@ lookupCorrectorCache dict cache w = do
     edits1  = process . edits . wildList $ w
     edits2  = process . concatMap edits . edits . wildList $ w
 
-      
-correct :: Dictionary -> IORef CorrectorCache -> [String] -> Iteratee ByteString IO Response
+correct :: Dictionary -> IORef CorrectorCache -> [String] -> ResourceT IO Response
 correct dict cache ws = do
   wm <- lift . mapM (lookupCorrectorCache dict cache) $ ws
   return $ ResponseBuilder status200 [("Content-Type", "application/json")]
