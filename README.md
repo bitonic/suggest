@@ -4,6 +4,7 @@ ternary search tries to complete and correct words.
 It's very fast, over 20k req/s.
 
 To build and run:
+
 ```
 cabal configure ; cabal build
 cp dist/build/suggest/suggest ./

@@ -11,7 +11,7 @@ build-type:         Simple
 
 source-repository head
   type:      git
-  location:  git://github.com/rostayob/suggest
+  location:  git://github.com/bitonic/suggest
   branch:    master
 
 executable suggest
