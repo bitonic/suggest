@@ -2,7 +2,7 @@ Simple suggestion and correction server, implemented with warp and using
 ternary search tries to complete and correct words.
 
 To find out how it works, check out the 
-[slides](https://raw.github.com/rostayob/suggest/master/slides.pdf). The slides
+[slides](https://raw.github.com/bitonic/suggest/master/slides.pdf). The slides
 are slightly outdated, since when I wrote them warp still used enumerator, while
 now it uses conduits, but the concepts still apply.
 
