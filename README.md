@@ -21,5 +21,5 @@ cp dist/build/suggest/suggest ./
 
 Screenshots:
 
-<img src="https://raw.github.com/rostayob/suggest/master/screenshots/1.png" />
-<img src="https://raw.github.com/rostayob/suggest/master/screenshots/2.png" />
+<img src="https://raw.github.com/bitonic/suggest/master/screenshots/1.png" />
+<img src="https://raw.github.com/bitonic/suggest/master/screenshots/2.png" />
