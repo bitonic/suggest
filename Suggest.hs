@@ -2,10 +2,8 @@
 module Main where
 
 import Blaze.ByteString.Builder.Char.Utf8 (fromString)
-import Control.Monad.Trans (lift)
 import Data.ByteString.UTF8 (toString)
 import Data.Char (toLower)
-import Data.Conduit (ResourceT)
 import Data.IORef
 import Data.List (intercalate, sortBy)
 import Data.Ord (comparing)
@@ -44,10 +42,10 @@ lookupSuggestCache dict cache w = do
       atomicModifyIORef cache ((, ()) . insert w ws)
       return ws
 
-suggest :: Dictionary -> IORef SuggestCache -> String -> ResourceT IO Response
+suggest :: Dictionary -> IORef SuggestCache -> String -> IO Response
 suggest dict cache w = do
-  ws <- lift $ lookupSuggestCache dict cache w
-  return $ ResponseBuilder status200 [("Content-Type", "application/json")]
+  ws <- lookupSuggestCache dict cache w
+  return $ responseBuilder status200 [("Content-Type", "application/json")]
            (fromString . jsonList $ ws)
 
 lookupCorrectorCache :: Dictionary -> IORef CorrectorCache -> String -> IO String
@@ -67,28 +65,28 @@ lookupCorrectorCache dict cache w = do
     edits1  = process . edits . wildList $ w
     edits2  = process . concatMap edits . edits . wildList $ w
 
-correct :: Dictionary -> IORef CorrectorCache -> [String] -> ResourceT IO Response
+correct :: Dictionary -> IORef CorrectorCache -> [String] -> IO Response
 correct dict cache ws = do
-  wm <- lift . mapM (lookupCorrectorCache dict cache) $ ws
-  return $ ResponseBuilder status200 [("Content-Type", "application/json")]
+  wm <- mapM (lookupCorrectorCache dict cache) $ ws
+  return $ responseBuilder status200 [("Content-Type", "application/json")]
            (fromString . unwords $ wm)
 
 search :: Response
-search = ResponseFile status200 [("Content-Type", "text/html")] searchPage Nothing
+search = responseFile status200 [("Content-Type", "text/html")] searchPage Nothing
 
 e404 :: Response
-e404 = ResponseBuilder status404 [("Content-Type", "text/html")] (fromString "404")
+e404 = responseBuilder status404 [("Content-Type", "text/html")] (fromString "404")
 
 app :: Dictionary -> IORef SuggestCache -> IORef CorrectorCache -> Application
-app dict scache ccache req = case rawPathInfo req of
+app dict scache ccache req respond = case rawPathInfo req of
   "/suggest.json" -> case queryString req of
-                       [("q", (Just w))] -> suggest dict scache (toString w)
-                       _                 -> return e404
+                       [("q", (Just w))] -> respond =<< suggest dict scache (toString w)
+                       _                 -> respond e404
   "/correct.json" -> case queryString req of
-                       [("q", (Just w))] -> correct dict ccache (words $ toString w)
-                       _                 -> return e404
-  "/"             -> return search
-  _               -> return e404
+                       [("q", (Just w))] -> respond =<< correct dict ccache (words $ toString w)
+                       _                 -> respond e404
+  "/"             -> respond search
+  _               -> respond e404
 
 main :: IO ()
 main = do
